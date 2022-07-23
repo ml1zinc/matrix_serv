@@ -1,0 +1,14 @@
+# folders
+matrix_conf/
+nginx/ssl/
+
+# files
+*.pem
+crontab
+.env
+
+run.py
+
+
+#include
+!crontab

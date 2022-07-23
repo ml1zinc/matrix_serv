@@ -1,0 +1,63 @@
+version: "3.7"
+
+
+services:
+  synapse:
+    image: "matrixdotorg/synapse:latest"
+    container_name: synapse
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./matrix_conf:/data
+    depends_on:
+      - db_postgres
+    networks: 
+      - backend
+      - web
+
+
+  db_postgres:
+    image: postgres:alpine
+    container_name: postgres
+    env_file: 
+      - ./postgres/postgres.env
+      - .env
+    restart: unless-stopped
+    volumes:
+      - ./postgres/db_data:/var/lib/postgresql/data
+      - ./postgres/postgres_init.sql:/docker-entrypoint-initdb.d/postgres_init.sql
+    networks: 
+      - backend
+
+
+  nginx:
+    build: 
+      context: ./nginx
+    container_name: nginx
+    environment:
+     - NGINX_HOST=${SYNAPSE_SERVER_NAME}
+    env_file:
+      - .env
+    ports:
+      -  "80:80"
+      -  "443:443"
+    volumes:
+      - ./nginx/ssl:/etc/letsencrypt/
+      - ./nginx/cert:/etc/letsencrypt/live/${SYNAPSE_SERVER_NAME}/
+      - ./nginx/duck.sh:/duckdns/duck.sh
+      - ./nginx/start.sh:/docker-entrypoint.d/40_start.sh
+      - ./nginx/crontab:/etc/crontabs/root
+      - ./nginx/conf/default.conf.template:/etc/nginx/templates/default.conf.template
+    depends_on:
+      - synapse
+    networks: 
+      - web
+
+
+networks:
+  backend:
+  web:
+
+
+      
